@@ -7,7 +7,8 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint": "eslint .",
         "format": "prettier --write .",
-        "format:check": "prettier --check ."
+        "format:check": "prettier --check .",
+        "prepare": "husky"
     },
     "keywords": [],
     "author": "",
@@ -26,6 +27,12 @@
         "@typescript-eslint/parser": "^8.60.0",
         "eslint": "^10.4.0",
         "eslint-config-prettier": "^10.1.8",
+        "husky": "^9.1.7",
+        "lint-staged": "^17.0.5",
         "prettier": "^3.8.3"
+    },
+    "lint-staged": {
+        "*.ts": "eslint",
+        "**/*": "prettier --write --ignore-unknown"
     }
 }
