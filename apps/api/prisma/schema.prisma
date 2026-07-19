@@ -6,3 +6,105 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// User accounts
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String
+  createdAt    DateTime          @default(now())
+  sessions     WorkoutSession[]
+  templates    WorkoutTemplate[]
+  routines     Routine[]
+}
+
+// Exercise library
+model Exercise {
+  id                String                    @id @default(uuid())
+  userId            String? // Null means system predefined
+  name              String
+  description       String?
+  templateExercises WorkoutTemplateExercise[]
+  sessionExercises  WorkoutSessionExercise[]
+}
+
+// Reusable workout templates created by the user
+model WorkoutTemplate {
+  id          String                    @id @default(uuid())
+  userId      String? // Null means system predefined
+  user        User?                     @relation(fields: [userId], references: [id])
+  name        String
+  description String?
+  exercises   WorkoutTemplateExercise[]
+  sessions    WorkoutSession[]
+  routines    RoutineTemplate[]
+}
+
+// Join table: exercises within a template
+model WorkoutTemplateExercise {
+  id                String          @id @default(uuid())
+  workoutTemplateId String
+  workoutTemplate   WorkoutTemplate @relation(fields: [workoutTemplateId], references: [id])
+  exerciseId        String
+  exercise          Exercise        @relation(fields: [exerciseId], references: [id])
+  orderIndex        Int
+  targetSets        Int?
+  targetRepsMin     Int?
+  targetRepsMax     Int?
+  restSeconds       Int?
+  supersetGroupId   String?
+}
+
+// A single logged workout session
+model WorkoutSession {
+  id                String                   @id @default(uuid())
+  userId            String
+  user              User                     @relation(fields: [userId], references: [id])
+  workoutTemplateId String?
+  workoutTemplate   WorkoutTemplate?         @relation(fields: [workoutTemplateId], references: [id])
+  startedAt         DateTime                 @default(now())
+  finishedAt        DateTime? // Null until session complete
+  exercises         WorkoutSessionExercise[]
+}
+
+// Join table: the exercises performed in a session
+model WorkoutSessionExercise {
+  id           String         @id @default(uuid())
+  sessionId    String
+  session      WorkoutSession @relation(fields: [sessionId], references: [id])
+  exerciseId   String
+  exercise     Exercise       @relation(fields: [exerciseId], references: [id])
+  exerciseName String
+  orderIndex   Int
+  sets         Set[]
+}
+
+// Individual sets performed within a session exercise
+model Set {
+  id                       String                 @id @default(uuid())
+  workoutSessionExerciseId String
+  workoutSessionExercise   WorkoutSessionExercise @relation(fields: [workoutSessionExerciseId], references: [id])
+  setIndex                 Int
+  metrics                  Json // { reps, weightKg, durationSeconds, rpe }
+  completedAt              DateTime?
+}
+
+// A recurring schedule of workout templates
+model Routine {
+  id          String            @id @default(uuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id])
+  name        String
+  description String?
+  templates   RoutineTemplate[]
+}
+
+// Join table: which templates belong to a routine and on which day
+model RoutineTemplate {
+  id                String          @id @default(uuid())
+  routineId         String
+  routine           Routine         @relation(fields: [routineId], references: [id])
+  workoutTemplateId String
+  workoutTemplate   WorkoutTemplate @relation(fields: [workoutTemplateId], references: [id])
+  dayOfWeek         Int?
+}
